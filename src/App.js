@@ -10,10 +10,8 @@ class CPUSchedulingSimulation extends Component {
       completedProcesses: [],
     };
     this.processNameInput = React.createRef();
-    this.processArrivalTimeInput = React.createRef(); // Thêm trường arrivalTime
-    this.processPriorityInput = React.createRef();
+    this.processArrivalTimeInput = React.createRef();
     this.processTimeInput = React.createRef();
-    
   }
 
   handleRunSimulation = () => {
@@ -24,22 +22,20 @@ class CPUSchedulingSimulation extends Component {
       return;
     }
 
-    const availableProcesses = processes.filter(process => process.time > 0);
+    const availableProcesses = processes.filter(
+      process => process.time > 0 && process.arrivalTime <= currentTime
+    );
 
     if (availableProcesses.length === 0) {
-      alert('Hết tiến trình');
+      alert('Hết tiến trình hoặc chưa có tiến trình nào đến.');
       return;
     }
 
-    // Sắp xếp các tiến trình theo độ ưu tiên và thời gian đến
-    availableProcesses.sort((a, b) => {
-      if (a.arrivalTime === b.arrivalTime) {
-        return b.priority - a.priority;
-      }
-      return a.arrivalTime - b.arrivalTime;
-    });
+    // Tìm tiến trình có thời gian còn lại nhỏ nhất và chưa hoàn thành
+    const nextProcess = availableProcesses.reduce((min, process) => {
+      return process.time < min.time ? process : min;
+    }, availableProcesses[0]);
 
-    const nextProcess = availableProcesses[0];
     const remainingProcesses = processes.map(process =>
       process.id === nextProcess.id ? { ...process, time: process.time - 1 } : process
     );
@@ -59,14 +55,13 @@ class CPUSchedulingSimulation extends Component {
   handleAddProcess = () => {
     const { processes } = this.state;
     const name = this.processNameInput.current.value;
-    const priority = this.processPriorityInput.current.value;
     const time = this.processTimeInput.current.value;
-    const arrivalTime = this.processArrivalTimeInput.current.value; // Thêm trường arrivalTime
+    const arrivalTime = this.processArrivalTimeInput.current.value;
     const id = processes.length + 1;
 
-    if (name && priority && time && arrivalTime) {
+    if (name && time && arrivalTime) {
       this.setState({
-        processes: [...processes, { id, name, priority, time, arrivalTime }], // Lưu trường arrivalTime
+        processes: [...processes, { id, name, time, arrivalTime }],
       });
     } else {
       alert('Vui lòng điền đầy đủ thông tin tiến trình.');
@@ -96,13 +91,11 @@ class CPUSchedulingSimulation extends Component {
 
     return (
       <div className="cpu-scheduling-simulation">
-        <h1>CPU Scheduling Simulation (Priority Scheduling)</h1>
+        <h1>CPU Scheduling Simulation (Shortest Remaining Time First)</h1>
         <div className="add-process-form">
           <input type="text" placeholder="Process name" ref={this.processNameInput} />
-          <input type="number" placeholder="Arrival Time" ref={this.processArrivalTimeInput} /> {/* Thêm trường arrivalTime */}
-          <input type="number" placeholder="Priority" ref={this.processPriorityInput} />
-          <input type="number" placeholder="Time" ref={this.processTimeInput} />
-          
+          <input type="number" placeholder="Arrival Time" ref={this.processArrivalTimeInput} />
+          <input type="number" placeholder="CPU Burst Time" ref={this.processTimeInput} />
           <button onClick={this.handleAddProcess}>Add</button>
         </div>
         <div className="process-list">
@@ -111,10 +104,8 @@ class CPUSchedulingSimulation extends Component {
             <thead>
               <tr>
                 <th>Process name</th>
-                <th>Arrival Time</th> {/* Thêm cột Arrival Time */}
-                <th>Priority</th>
-                <th>Time</th>
-        
+                <th>Arrival Time</th>
+                <th>CPU Burst Time</th>
                 <th>Action</th>
               </tr>
             </thead>
@@ -122,10 +113,8 @@ class CPUSchedulingSimulation extends Component {
               {processes.map(process => (
                 <tr key={process.id}>
                   <td>{process.name}</td>
-                  <td>{process.arrivalTime}</td> {/* Hiển thị giá trị Arrival Time */}
-                  <td>{process.priority}</td>
+                  <td>{process.arrivalTime}</td>
                   <td>{process.time}</td>
-                  
                   <td>
                     <button onClick={() => this.handleDeleteProcess(process.id)}>Delete</button>
                   </td>
