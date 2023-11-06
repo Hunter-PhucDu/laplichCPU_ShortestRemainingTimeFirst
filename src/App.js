@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import './App.css';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 class CPUSchedulingSimulation extends Component {
   constructor(props) {
@@ -16,6 +17,7 @@ class CPUSchedulingSimulation extends Component {
     this.processNameInput = React.createRef();
     this.processArrivalTimeInput = React.createRef();
     this.processTimeInput = React.createRef();
+    this.runTimeout = null;
   }
 
   handleRunSimulation = async () => {
@@ -43,7 +45,7 @@ class CPUSchedulingSimulation extends Component {
           if (availableProcesses.length === 0) {
             const newCurrentTime = this.state.currentTime + 1;
             this.setState({ currentTime: newCurrentTime });
-            setTimeout(runStep, 100);
+            this.runTimeout = setTimeout(runStep, 100);
             return;
           }
 
@@ -64,7 +66,7 @@ class CPUSchedulingSimulation extends Component {
           this.setState({ processes: remainingProcesses, completedProcesses: newCompletedProcesses, currentTime: newCurrentTime });
 
           if (!isPaused) {
-            setTimeout(runStep, 100);
+            this.runTimeout = setTimeout(runStep, 100);
           }
         }
       } else {
@@ -74,6 +76,7 @@ class CPUSchedulingSimulation extends Component {
 
     runStep();
   };
+
 
   sleep = ms => {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -140,7 +143,7 @@ class CPUSchedulingSimulation extends Component {
     }
 
     this.setState({
-      processes: [], // Xóa hết dữ liệu trong "Process list"
+      processes: [],
       initialProcesses: [],
       currentTime: 0,
       completedProcesses: [],
@@ -159,7 +162,7 @@ class CPUSchedulingSimulation extends Component {
     }
 
     this.setState({
-      processes: [...initialProcesses], // Sử dụng dữ liệu ban đầu để đặt lại
+      processes: [...initialProcesses],
       currentTime: 0,
       completedProcesses: [],
       isRunning: false,
@@ -169,29 +172,71 @@ class CPUSchedulingSimulation extends Component {
   };
 
   handleStop = () => {
-    this.setState({ isPaused: true });
+    this.clearRunTimeout();
   };
 
   handleContinue = () => {
-    this.setState({ isPaused: false });
-    this.handleRunSimulation();
+    this.setState({ isPaused: false }, () => {
+      this.runStep();
+    });
+  };
+
+  runStep = () => {
+    if (this.state.processes.some(process => process.time > 0)) {
+      if (!this.state.isPaused) {
+        const availableProcesses = this.state.processes.filter(
+          process => process.time > 0 && process.arrivalTime <= this.state.currentTime
+        );
+
+        if (availableProcesses.length === 0) {
+          const newCurrentTime = this.state.currentTime + 1;
+          this.setState({ currentTime: newCurrentTime });
+          this.runTimeout = setTimeout(this.runStep, 100); // Sử dụng setTimeout để gọi lại runStep
+          return;
+        }
+
+        const nextProcess = availableProcesses.reduce((min, process) => {
+          return process.time < min.time ? process : min;
+        }, availableProcesses[0]);
+
+        const remainingProcesses = this.state.processes.map(process =>
+          process.id === nextProcess.id ? { ...process, time: process.time - 1 } : process
+        );
+
+        const newCompletedProcesses = [
+          ...this.state.completedProcesses,
+          { id: nextProcess.id, startTime: this.state.currentTime, endTime: this.state.currentTime + 1 },
+        ];
+
+        const newCurrentTime = this.state.currentTime + 1;
+        this.setState({ processes: remainingProcesses, completedProcesses: newCompletedProcesses, currentTime: newCurrentTime });
+
+        if (!this.state.isPaused) {
+          this.runTimeout = setTimeout(this.runStep, 100); // Sử dụng setTimeout để gọi lại runStep
+        }
+      }
+    } else {
+      this.setState({ isRunning: false, isSimulated: true, isPaused: false });
+    }
+  };
+
+
+  clearRunTimeout = () => {
+    if (this.runTimeout) {
+      clearTimeout(this.runTimeout);
+    }
+    this.setState({ isPaused: true });
   };
 
   render() {
     const { initialProcesses, isRunning, isSimulated, isPaused } = this.state;
-    const totalTime = 100;
+    const totalTime = 200;
     const columnWidth = 10;
     const currentTime = this.state.currentTime;
 
     return (
       <div className="cpu-scheduling-simulation">
         <h1>Lập lịch CPU SRTF (Shortest Remaining Time First)</h1>
-        <div className="add-process-form">
-          <input type="text" placeholder="Process name" ref={this.processNameInput} />
-          <input type="number" placeholder="Arrival Time" ref={this.processArrivalTimeInput} />
-          <input type="number" placeholder="CPU Burst Time" ref={this.processTimeInput} />
-          <button onClick={this.handleAddProcess}>Add</button>
-        </div>
         <br></br>
         <div className="process-list">
           <h2>Process List</h2>
@@ -226,6 +271,13 @@ class CPUSchedulingSimulation extends Component {
             </tbody>
           </table>
         </div>
+        <br></br>
+        <div className="add-process-form">
+          <input type="text" placeholder="Process name" ref={this.processNameInput} />
+          <input type="number" placeholder="Arrival Time" ref={this.processArrivalTimeInput} />
+          <input type="number" placeholder="CPU Burst Time" ref={this.processTimeInput} />
+          <button onClick={this.handleAddProcess}>Add</button>
+        </div>
         <div className="controls">
           <div>
             <button onClick={isRunning ? null : isSimulated ? this.handleReFresh : this.handleRunSimulation} disabled={isRunning}>
@@ -242,8 +294,8 @@ class CPUSchedulingSimulation extends Component {
             </button>
           </div>
         </div>
+        <div className='moPhong'>Mô phỏng</div>
         <div className="table-container">
-          <div className='moPhong'>Mô phỏng</div>
           <div className="table-scroll">
             <table className="process-table">
               <thead>
@@ -254,7 +306,7 @@ class CPUSchedulingSimulation extends Component {
                     .map((_, index) => (
                       <th
                         key={index}
-                        className={currentTime === index ? 'running' : ''}
+                        className={currentTime === index + 1 ? 'running' : ''}
                         style={{ width: columnWidth }}
                       >
                         {index}
@@ -294,7 +346,7 @@ class CPUSchedulingSimulation extends Component {
 
 function App() {
   return (
-    <div className="App">
+    <div className="App" >
       <CPUSchedulingSimulation />
     </div>
   );
