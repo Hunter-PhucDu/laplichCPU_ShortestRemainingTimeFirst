@@ -1,6 +1,7 @@
 /* App Container */
 /* src/index.css */
 @import 'bootstrap/dist/css/bootstrap.min.css';
+@import 'bootstrap/dist/css/bootstrap.min.css';
 
 .App {
   text-align: center;
@@ -10,20 +11,23 @@
   justify-content: center;
   align-items: center;
   /* height: 100vh; */
-  background-color: #f0f0f0;
+  background-color: #f0e7dc;
   margin: 0;
   padding: 0;
 }
 
+
 /* CPU Scheduling Simulation Container */
 .cpu-scheduling-simulation {
-  background-color: #fff;
+  background-color: #f0e7dc;
   border-radius: 4px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   padding: 20px;
   font-size: 14px;
   text-align: center;
+ 
 }
+
 
 .cpu-scheduling-simulation input,
 .cpu-scheduling-simulation button {
@@ -49,6 +53,14 @@ button {
   max-width: 100%;
   display: inline-block;
   font-size: 8px;
+  
+}
+
+.moPhong {
+  font-size: 24px;
+  text-align: left;
+  background-color: #ac1034;
+  color: #fff;
 }
 
 /* Table Scroll Container */
@@ -99,6 +111,8 @@ button {
   /* Kích thước tối đa của khu vực */
   overflow-y: auto;
   /* Hiển thị thanh cuộn khi nội dung vượt quá kích thước tối đa */
+  background-color: #f0e7dc;
+  border: 1px solid #ac1034;
 }
 
 .process-list table {
