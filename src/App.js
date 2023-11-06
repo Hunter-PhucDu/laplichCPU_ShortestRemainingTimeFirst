@@ -21,7 +21,7 @@ class CPUSchedulingSimulation extends Component {
   }
 
   handleRunSimulation = async () => {
-    const { processes, currentTime, completedProcesses, isRunning, isSimulated, isPaused } = this.state;
+    const { processes, isRunning, isPaused } = this.state;
 
     if (processes.length === 0) {
       alert('Danh sách tiến trình trống!');
@@ -77,7 +77,6 @@ class CPUSchedulingSimulation extends Component {
     runStep();
   };
 
-
   sleep = ms => {
     return new Promise(resolve => setTimeout(resolve, ms));
   };
@@ -121,7 +120,7 @@ class CPUSchedulingSimulation extends Component {
     }
 
     if (isSimulated) {
-      alert('Mô phỏng đã hoàn thành, bạn cần ấn "Reset" để chạy lại.');
+      alert('Mô phỏng đã hoàn thành, bạn cần ấn "Refresh" để xóa tiến trình.');
       return;
     }
 
@@ -191,7 +190,7 @@ class CPUSchedulingSimulation extends Component {
         if (availableProcesses.length === 0) {
           const newCurrentTime = this.state.currentTime + 1;
           this.setState({ currentTime: newCurrentTime });
-          this.runTimeout = setTimeout(this.runStep, 100); // Sử dụng setTimeout để gọi lại runStep
+          this.runTimeout = setTimeout(this.runStep, 100);
           return;
         }
 
@@ -212,14 +211,13 @@ class CPUSchedulingSimulation extends Component {
         this.setState({ processes: remainingProcesses, completedProcesses: newCompletedProcesses, currentTime: newCurrentTime });
 
         if (!this.state.isPaused) {
-          this.runTimeout = setTimeout(this.runStep, 100); // Sử dụng setTimeout để gọi lại runStep
+          this.runTimeout = setTimeout(this.runStep, 100);
         }
       }
     } else {
       this.setState({ isRunning: false, isSimulated: true, isPaused: false });
     }
   };
-
 
   clearRunTimeout = () => {
     if (this.runTimeout) {
@@ -237,7 +235,7 @@ class CPUSchedulingSimulation extends Component {
     return (
       <div className="cpu-scheduling-simulation">
         <h1>Lập lịch CPU SRTF (Shortest Remaining Time First)</h1>
-        <br></br>
+        <br />
         <div className="process-list">
           <h2>Process List</h2>
           <table>
@@ -271,7 +269,7 @@ class CPUSchedulingSimulation extends Component {
             </tbody>
           </table>
         </div>
-        <br></br>
+        <br />
         <div className="add-process-form">
           <input type="text" placeholder="Process name" ref={this.processNameInput} />
           <input type="number" placeholder="Arrival Time" ref={this.processArrivalTimeInput} />
