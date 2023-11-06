@@ -33,43 +33,46 @@ class CPUSchedulingSimulation extends Component {
 
     this.setState({ isRunning: true });
 
-    while (this.state.processes.some(process => process.time > 0)) {
-      const availableProcesses = this.state.processes.filter(
-        process => process.time > 0 && process.arrivalTime <= this.state.currentTime
-      );
+    const runStep = async () => {
+      if (this.state.processes.some(process => process.time > 0)) {
+        if (!isPaused) {
+          const availableProcesses = this.state.processes.filter(
+            process => process.time > 0 && process.arrivalTime <= this.state.currentTime
+          );
 
-      if (availableProcesses.length === 0) {
-        const newCurrentTime = this.state.currentTime + 1;
-        await this.sleep(100);
-        this.setState({ currentTime: newCurrentTime });
-        continue;
+          if (availableProcesses.length === 0) {
+            const newCurrentTime = this.state.currentTime + 1;
+            this.setState({ currentTime: newCurrentTime });
+            setTimeout(runStep, 100);
+            return;
+          }
+
+          const nextProcess = availableProcesses.reduce((min, process) => {
+            return process.time < min.time ? process : min;
+          }, availableProcesses[0]);
+
+          const remainingProcesses = this.state.processes.map(process =>
+            process.id === nextProcess.id ? { ...process, time: process.time - 1 } : process
+          );
+
+          const newCompletedProcesses = [
+            ...this.state.completedProcesses,
+            { id: nextProcess.id, startTime: this.state.currentTime, endTime: this.state.currentTime + 1 },
+          ];
+
+          const newCurrentTime = this.state.currentTime + 1;
+          this.setState({ processes: remainingProcesses, completedProcesses: newCompletedProcesses, currentTime: newCurrentTime });
+
+          if (!isPaused) {
+            setTimeout(runStep, 100);
+          }
+        }
+      } else {
+        this.setState({ isRunning: false, isSimulated: true, isPaused: false });
       }
+    };
 
-      const nextProcess = availableProcesses.reduce((min, process) => {
-        return process.time < min.time ? process : min;
-      }, availableProcesses[0]);
-
-      const remainingProcesses = this.state.processes.map(process =>
-        process.id === nextProcess.id ? { ...process, time: process.time - 1 } : process
-      );
-
-      const newCompletedProcesses = [
-        ...this.state.completedProcesses,
-        { id: nextProcess.id, startTime: this.state.currentTime, endTime: this.state.currentTime + 1 },
-      ];
-
-      const newCurrentTime = this.state.currentTime + 1;
-      await this.sleep(100);
-      this.setState({ processes: remainingProcesses, completedProcesses: newCompletedProcesses, currentTime: newCurrentTime });
-
-      if (isPaused) {
-        // Tạm dừng khi nút "Stop" được bấm
-        this.setState({ isRunning: false, isPaused: true });
-        return;
-      }
-    }
-
-    this.setState({ isRunning: false, isSimulated: true, isPaused: false });
+    runStep();
   };
 
   sleep = ms => {
@@ -128,7 +131,7 @@ class CPUSchedulingSimulation extends Component {
     }));
   };
 
-  handleReset = () => {
+  handleResetPage = () => {
     const { isRunning } = this.state;
 
     if (isRunning) {
@@ -137,7 +140,26 @@ class CPUSchedulingSimulation extends Component {
     }
 
     this.setState({
-      processes: [...this.state.initialProcesses], // Sử dụng dữ liệu ban đầu để đặt lại
+      processes: [], // Xóa hết dữ liệu trong "Process list"
+      initialProcesses: [],
+      currentTime: 0,
+      completedProcesses: [],
+      isRunning: false,
+      isSimulated: false,
+      isPaused: false,
+    });
+  };
+
+  handleReFresh = () => {
+    const { isRunning, initialProcesses } = this.state;
+
+    if (isRunning) {
+      alert('Dừng mô phỏng trước khi đặt lại.');
+      return;
+    }
+
+    this.setState({
+      processes: [...initialProcesses], // Sử dụng dữ liệu ban đầu để đặt lại
       currentTime: 0,
       completedProcesses: [],
       isRunning: false,
@@ -152,6 +174,7 @@ class CPUSchedulingSimulation extends Component {
 
   handleContinue = () => {
     this.setState({ isPaused: false });
+    this.handleRunSimulation();
   };
 
   render() {
@@ -205,14 +228,12 @@ class CPUSchedulingSimulation extends Component {
         </div>
         <div className="controls">
           <div>
-            <button onClick={isRunning ? null : isSimulated ? this.handleReset : this.handleRunSimulation} disabled={isRunning}>
-              {isRunning ? 'Running...' : isSimulated ? 'Reset' : 'Run'}
+            <button onClick={isRunning ? null : isSimulated ? this.handleReFresh : this.handleRunSimulation} disabled={isRunning}>
+              {isRunning ? 'Running...' : isSimulated ? 'Refresh' : 'Run'}
             </button>
-            <button onClick={this.handleReset} disabled={isRunning}>
+            <button onClick={this.handleResetPage} disabled={isRunning}>
               Reset
             </button>
-          </div>
-          <div>
             <button onClick={this.handleStop} disabled={!isRunning || isPaused}>
               Stop
             </button>
@@ -222,6 +243,7 @@ class CPUSchedulingSimulation extends Component {
           </div>
         </div>
         <div className="table-container">
+          <div className='moPhong'>Mô phỏng</div>
           <div className="table-scroll">
             <table className="process-table">
               <thead>
