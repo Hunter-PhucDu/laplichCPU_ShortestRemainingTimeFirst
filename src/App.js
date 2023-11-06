@@ -6,98 +6,170 @@ class CPUSchedulingSimulation extends Component {
     super(props);
     this.state = {
       processes: [],
+      initialProcesses: [],
       currentTime: 0,
       completedProcesses: [],
+      isRunning: false,
+      isSimulated: false,
+      isPaused: false,
     };
     this.processNameInput = React.createRef();
     this.processArrivalTimeInput = React.createRef();
     this.processTimeInput = React.createRef();
   }
 
-  handleRunSimulation = () => {
-    const { processes, currentTime, completedProcesses } = this.state;
+  handleRunSimulation = async () => {
+    const { processes, currentTime, completedProcesses, isRunning, isSimulated, isPaused } = this.state;
 
     if (processes.length === 0) {
       alert('Danh sách tiến trình trống!');
       return;
     }
 
-    const availableProcesses = processes.filter(
-      process => process.time > 0 && process.arrivalTime <= currentTime
-    );
-
-    if (availableProcesses.length === 0) {
-      alert('Hết tiến trình hoặc chưa có tiến trình nào đến.');
+    if (isRunning) {
+      alert('Mô phỏng đang chạy!');
       return;
     }
 
-    // Tìm tiến trình có thời gian còn lại nhỏ nhất và chưa hoàn thành
-    const nextProcess = availableProcesses.reduce((min, process) => {
-      return process.time < min.time ? process : min;
-    }, availableProcesses[0]);
+    this.setState({ isRunning: true });
 
-    const remainingProcesses = processes.map(process =>
-      process.id === nextProcess.id ? { ...process, time: process.time - 1 } : process
-    );
+    while (this.state.processes.some(process => process.time > 0)) {
+      const availableProcesses = this.state.processes.filter(
+        process => process.time > 0 && process.arrivalTime <= this.state.currentTime
+      );
 
-    this.setState({
-      processes: remainingProcesses,
-      currentTime: currentTime + 1,
-      completedProcesses: [
-        ...completedProcesses,
-        { id: nextProcess.id, startTime: currentTime, endTime: currentTime + 1 },
-      ],
-    });
+      if (availableProcesses.length === 0) {
+        const newCurrentTime = this.state.currentTime + 1;
+        await this.sleep(100);
+        this.setState({ currentTime: newCurrentTime });
+        continue;
+      }
 
-    setTimeout(this.handleRunSimulation, 100);
+      const nextProcess = availableProcesses.reduce((min, process) => {
+        return process.time < min.time ? process : min;
+      }, availableProcesses[0]);
+
+      const remainingProcesses = this.state.processes.map(process =>
+        process.id === nextProcess.id ? { ...process, time: process.time - 1 } : process
+      );
+
+      const newCompletedProcesses = [
+        ...this.state.completedProcesses,
+        { id: nextProcess.id, startTime: this.state.currentTime, endTime: this.state.currentTime + 1 },
+      ];
+
+      const newCurrentTime = this.state.currentTime + 1;
+      await this.sleep(100);
+      this.setState({ processes: remainingProcesses, completedProcesses: newCompletedProcesses, currentTime: newCurrentTime });
+
+      if (isPaused) {
+        // Tạm dừng khi nút "Stop" được bấm
+        this.setState({ isRunning: false, isPaused: true });
+        return;
+      }
+    }
+
+    this.setState({ isRunning: false, isSimulated: true, isPaused: false });
+  };
+
+  sleep = ms => {
+    return new Promise(resolve => setTimeout(resolve, ms));
   };
 
   handleAddProcess = () => {
-    const { processes } = this.state;
+    const { isRunning, isSimulated } = this.state;
     const name = this.processNameInput.current.value;
     const time = this.processTimeInput.current.value;
     const arrivalTime = this.processArrivalTimeInput.current.value;
-    const id = processes.length + 1;
+
+    if (isRunning) {
+      alert('Dừng mô phỏng trước khi thêm tiến trình.');
+      return;
+    }
+
+    if (isSimulated) {
+      alert('Mô phỏng đã hoàn thành, bạn cần ấn "Reset" để chạy lại.');
+      return;
+    }
 
     if (name && time && arrivalTime) {
-      this.setState({
-        processes: [...processes, { id, name, time, arrivalTime }],
-      });
+      const id = this.state.initialProcesses.length + 1;
+      this.setState(prevState => ({
+        processes: [...prevState.processes, { id, name, time, arrivalTime }],
+        initialProcesses: [...prevState.initialProcesses, { id, name, time, arrivalTime }],
+      }));
+      this.processNameInput.current.value = '';
+      this.processTimeInput.current.value = '';
+      this.processArrivalTimeInput.current.value = '';
     } else {
       alert('Vui lòng điền đầy đủ thông tin tiến trình.');
     }
   };
 
   handleDeleteProcess = id => {
-    const { processes } = this.state;
-    const updatedProcesses = processes.filter(process => process.id !== id);
-    this.setState({
+    const { isRunning, isSimulated } = this.state;
+
+    if (isRunning) {
+      alert('Dừng mô phỏng trước khi xóa tiến trình.');
+      return;
+    }
+
+    if (isSimulated) {
+      alert('Mô phỏng đã hoàn thành, bạn cần ấn "Reset" để chạy lại.');
+      return;
+    }
+
+    const updatedProcesses = this.state.processes.filter(process => process.id !== id);
+    this.setState(prevState => ({
       processes: updatedProcesses,
-    });
+      initialProcesses: prevState.initialProcesses.filter(process => process.id !== id),
+      currentTime: 0,
+      completedProcesses: [],
+    }));
   };
 
   handleReset = () => {
+    const { isRunning } = this.state;
+
+    if (isRunning) {
+      alert('Dừng mô phỏng trước khi đặt lại.');
+      return;
+    }
+
     this.setState({
-      processes: [],
+      processes: [...this.state.initialProcesses], // Sử dụng dữ liệu ban đầu để đặt lại
       currentTime: 0,
       completedProcesses: [],
+      isRunning: false,
+      isSimulated: false,
+      isPaused: false,
     });
   };
 
+  handleStop = () => {
+    this.setState({ isPaused: true });
+  };
+
+  handleContinue = () => {
+    this.setState({ isPaused: false });
+  };
+
   render() {
-    const { processes, currentTime, completedProcesses } = this.state;
+    const { initialProcesses, isRunning, isSimulated, isPaused } = this.state;
     const totalTime = 100;
     const columnWidth = 10;
+    const currentTime = this.state.currentTime;
 
     return (
       <div className="cpu-scheduling-simulation">
-        <h1>CPU Scheduling Simulation (Shortest Remaining Time First)</h1>
+        <h1>Lập lịch CPU SRTF (Shortest Remaining Time First)</h1>
         <div className="add-process-form">
           <input type="text" placeholder="Process name" ref={this.processNameInput} />
           <input type="number" placeholder="Arrival Time" ref={this.processArrivalTimeInput} />
           <input type="number" placeholder="CPU Burst Time" ref={this.processTimeInput} />
           <button onClick={this.handleAddProcess}>Add</button>
         </div>
+        <br></br>
         <div className="process-list">
           <h2>Process List</h2>
           <table>
@@ -110,13 +182,21 @@ class CPUSchedulingSimulation extends Component {
               </tr>
             </thead>
             <tbody>
-              {processes.map(process => (
+              {initialProcesses.map(process => (
                 <tr key={process.id}>
                   <td>{process.name}</td>
                   <td>{process.arrivalTime}</td>
-                  <td>{process.time}</td>
                   <td>
-                    <button onClick={() => this.handleDeleteProcess(process.id)}>Delete</button>
+                    {process.name === 'CPU Burst Time' ? (
+                      <div style={{ width: '21px', height: '20.8px' }}>{process.time}</div>
+                    ) : (
+                      process.time
+                    )}
+                  </td>
+                  <td>
+                    <button onClick={() => this.handleDeleteProcess(process.id)} disabled={isRunning}>
+                      Delete
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -124,10 +204,22 @@ class CPUSchedulingSimulation extends Component {
           </table>
         </div>
         <div className="controls">
-          <button onClick={this.handleRunSimulation} disabled={completedProcesses.length > 0}>
-            Run
-          </button>
-          <button onClick={this.handleReset}>Reset</button>
+          <div>
+            <button onClick={isRunning ? null : isSimulated ? this.handleReset : this.handleRunSimulation} disabled={isRunning}>
+              {isRunning ? 'Running...' : isSimulated ? 'Reset' : 'Run'}
+            </button>
+            <button onClick={this.handleReset} disabled={isRunning}>
+              Reset
+            </button>
+          </div>
+          <div>
+            <button onClick={this.handleStop} disabled={!isRunning || isPaused}>
+              Stop
+            </button>
+            <button onClick={this.handleContinue} disabled={!isPaused || isSimulated}>
+              Continue
+            </button>
+          </div>
         </div>
         <div className="table-container">
           <div className="table-scroll">
@@ -149,7 +241,7 @@ class CPUSchedulingSimulation extends Component {
                 </tr>
               </thead>
               <tbody>
-                {processes.map(process => (
+                {initialProcesses.map(process => (
                   <tr key={process.id}>
                     <td>{process.name}</td>
                     {Array(totalTime)
@@ -158,7 +250,7 @@ class CPUSchedulingSimulation extends Component {
                         <td
                           key={index}
                           className={
-                            completedProcesses.some(item => {
+                            this.state.completedProcesses.some(item => {
                               return item.id === process.id && index >= item.startTime && index < item.endTime;
                             })
                               ? 'completed'
