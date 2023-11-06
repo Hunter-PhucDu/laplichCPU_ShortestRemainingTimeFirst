@@ -64,9 +64,9 @@ class CPUSchedulingSimulation extends Component {
 
           const newCurrentTime = this.state.currentTime + 1;
           this.setState({ processes: remainingProcesses, completedProcesses: newCompletedProcesses, currentTime: newCurrentTime });
-
           if (!isPaused) {
-            this.runTimeout = setTimeout(runStep, 100);
+            /* chỉnh thời gian delay khi chạy tiến trình */
+            this.runTimeout = setTimeout(runStep, 400);
           }
         }
       } else {
@@ -93,11 +93,17 @@ class CPUSchedulingSimulation extends Component {
     }
 
     if (isSimulated) {
-      alert('Mô phỏng đã hoàn thành, bạn cần ấn "Reset" để chạy lại.');
+      alert('Mô phỏng đã hoàn thành, bạn cần ấn "Refresh" để chạy lại.');
       return;
     }
 
     if (name && time && arrivalTime) {
+      // Kiểm tra xem tên tiến trình đã tồn tại trong danh sách chưa
+      if (this.state.initialProcesses.some(process => process.name === name)) {
+        alert('Tên tiến trình đã tồn tại. Vui lòng chọn tên khác.');
+        return;
+      }
+
       const id = this.state.initialProcesses.length + 1;
       this.setState(prevState => ({
         processes: [...prevState.processes, { id, name, time, arrivalTime }],
@@ -110,6 +116,7 @@ class CPUSchedulingSimulation extends Component {
       alert('Vui lòng điền đầy đủ thông tin tiến trình.');
     }
   };
+
 
   handleDeleteProcess = id => {
     const { isRunning, isSimulated } = this.state;
@@ -211,7 +218,7 @@ class CPUSchedulingSimulation extends Component {
         this.setState({ processes: remainingProcesses, completedProcesses: newCompletedProcesses, currentTime: newCurrentTime });
 
         if (!this.state.isPaused) {
-          this.runTimeout = setTimeout(this.runStep, 100);
+          this.runTimeout = setTimeout(this.runStep, 400);
         }
       }
     } else {
@@ -234,8 +241,9 @@ class CPUSchedulingSimulation extends Component {
 
     return (
       <div className="cpu-scheduling-simulation">
-        <h1>Lập lịch CPU SRTF (Shortest Remaining Time First)</h1>
         <br />
+        <h2>Nguyên lý hệ điều hành</h2>
+        <h2>Bài tập lớn: Mô phỏng giải thuật lập lịch CPU SRTF (Shortest Remaining Time First)</h2>
         <div className="process-list">
           <h2>Process List</h2>
           <table>
@@ -254,7 +262,7 @@ class CPUSchedulingSimulation extends Component {
                   <td>{process.arrivalTime}</td>
                   <td>
                     {process.name === 'CPU Burst Time' ? (
-                      <div style={{ width: '21px', height: '20.8px' }}>{process.time}</div>
+                      <div>{process.time}</div>
                     ) : (
                       process.time
                     )}
