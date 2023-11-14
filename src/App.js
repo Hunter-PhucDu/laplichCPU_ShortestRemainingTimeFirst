@@ -46,7 +46,11 @@ class CPUSchedulingSimulation extends Component {
           if (availableProcesses.length === 0) {
             const newCurrentTime = this.state.currentTime + 1;
             this.setState({ currentTime: newCurrentTime });
+<<<<<<< HEAD
+            setTimeout(runStep, 100);
+=======
             this.runTimeout = setTimeout(runStep, 100);
+>>>>>>> 8843c25244363644526f2f501119d580ac691dcc
             return;
           }
 
@@ -66,9 +70,15 @@ class CPUSchedulingSimulation extends Component {
 
           const newCurrentTime = this.state.currentTime + 1;
           this.setState({ processes: remainingProcesses, completedProcesses: newCompletedProcesses, currentTime: newCurrentTime });
+<<<<<<< HEAD
+
+          if (!isPaused) {
+            setTimeout(runStep, 100);
+=======
           if (!isPaused) {
             /* chỉnh thời gian delay khi chạy tiến trình */
             this.runTimeout = setTimeout(runStep, 400);
+>>>>>>> 8843c25244363644526f2f501119d580ac691dcc
           }
         }
       } else {
@@ -151,7 +161,11 @@ class CPUSchedulingSimulation extends Component {
     }
 
     this.setState({
+<<<<<<< HEAD
+      processes: [], // Xóa hết dữ liệu trong "Process list"
+=======
       processes: [],
+>>>>>>> 8843c25244363644526f2f501119d580ac691dcc
       initialProcesses: [],
       currentTime: 0,
       completedProcesses: [],
@@ -170,7 +184,11 @@ class CPUSchedulingSimulation extends Component {
     }
 
     this.setState({
+<<<<<<< HEAD
+      processes: [...initialProcesses], // Sử dụng dữ liệu ban đầu để đặt lại
+=======
       processes: [...initialProcesses],
+>>>>>>> 8843c25244363644526f2f501119d580ac691dcc
       currentTime: 0,
       completedProcesses: [],
       isRunning: false,
@@ -184,6 +202,10 @@ class CPUSchedulingSimulation extends Component {
   };
 
   handleContinue = () => {
+<<<<<<< HEAD
+    this.setState({ isPaused: false });
+    this.handleRunSimulation();
+=======
     this.setState({ isPaused: false }, () => {
       this.runStep();
     });
@@ -233,6 +255,7 @@ class CPUSchedulingSimulation extends Component {
       clearTimeout(this.runTimeout);
     }
     this.setState({ isPaused: true });
+>>>>>>> 8843c25244363644526f2f501119d580ac691dcc
   };
 
   render() {
@@ -304,6 +327,7 @@ class CPUSchedulingSimulation extends Component {
         </div>
         <div className='moPhong'>Mô phỏng</div>
         <div className="table-container">
+          <div className='moPhong'>Mô phỏng</div>
           <div className="table-scroll">
             <table className="process-table">
               <thead>
@@ -359,5 +383,4 @@ function App() {
     </div>
   );
 }
-
 export default App;
