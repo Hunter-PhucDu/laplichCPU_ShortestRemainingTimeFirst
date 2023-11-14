@@ -75,7 +75,6 @@ class CPUSchedulingSimulation extends Component {
         this.setState({ isRunning: false, isSimulated: true, isPaused: false });
       }
     };
-
     runStep();
   };
 
@@ -99,14 +98,17 @@ class CPUSchedulingSimulation extends Component {
       return;
     }
 
-    if (name && time >= 0 && arrivalTime >= 0) { // Kiểm tra nếu time và arrivalTime không âm
-      // Kiểm tra xem tên tiến trình đã tồn tại trong danh sách chưa
+    if (name && time >= 0 && arrivalTime >= 0) {
+      // Generate a unique id for the process
+      const id = Date.now();
+
+      // Check if the name already exists in the processes
       if (this.state.initialProcesses.some(process => process.name === name)) {
         alert('Tên tiến trình đã tồn tại. Vui lòng chọn tên khác.');
         return;
       }
 
-      const id = this.state.initialProcesses.length + 1;
+      // Update state with the new process
       this.setState(prevState => ({
         processes: [...prevState.processes, { id, name, time, arrivalTime }],
         initialProcesses: [...prevState.initialProcesses, { id, name, time, arrivalTime }],
@@ -118,7 +120,6 @@ class CPUSchedulingSimulation extends Component {
       alert('Vui lòng điền đầy đủ thông tin tiến trình và đảm bảo giá trị Thời gian Đến và Thời gian Burst CPU là không âm.');
     }
   };
-
 
   handleDeleteProcess = id => {
     const { isRunning, isSimulated } = this.state;
