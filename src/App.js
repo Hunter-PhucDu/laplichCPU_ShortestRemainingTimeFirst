@@ -38,6 +38,7 @@ class CPUSchedulingSimulation extends Component {
     const runStep = async () => {
       if (this.state.processes.some(process => process.time > 0)) {
         if (!isPaused) {
+          // Filter processes with Arrival Time <= currentTime
           const availableProcesses = this.state.processes.filter(
             process => process.time > 0 && process.arrivalTime <= this.state.currentTime
           );
@@ -49,9 +50,10 @@ class CPUSchedulingSimulation extends Component {
             return;
           }
 
-          const nextProcess = availableProcesses.reduce((min, process) => {
-            return process.time < min.time ? process : min;
-          }, availableProcesses[0]);
+          // Sort available processes by CPU Burst Time (time) in ascending order
+          availableProcesses.sort((a, b) => a.time - b.time);
+
+          const nextProcess = availableProcesses[0];
 
           const remainingProcesses = this.state.processes.map(process =>
             process.id === nextProcess.id ? { ...process, time: process.time - 1 } : process
@@ -84,8 +86,8 @@ class CPUSchedulingSimulation extends Component {
   handleAddProcess = () => {
     const { isRunning, isSimulated } = this.state;
     const name = this.processNameInput.current.value;
-    const time = this.processTimeInput.current.value;
-    const arrivalTime = this.processArrivalTimeInput.current.value;
+    const time = parseInt(this.processTimeInput.current.value, 10);
+    const arrivalTime = parseInt(this.processArrivalTimeInput.current.value, 10);
 
     if (isRunning) {
       alert('Dừng mô phỏng trước khi thêm tiến trình.');
@@ -97,7 +99,7 @@ class CPUSchedulingSimulation extends Component {
       return;
     }
 
-    if (name && time && arrivalTime) {
+    if (name && time >= 0 && arrivalTime >= 0) { // Kiểm tra nếu time và arrivalTime không âm
       // Kiểm tra xem tên tiến trình đã tồn tại trong danh sách chưa
       if (this.state.initialProcesses.some(process => process.name === name)) {
         alert('Tên tiến trình đã tồn tại. Vui lòng chọn tên khác.');
@@ -113,7 +115,7 @@ class CPUSchedulingSimulation extends Component {
       this.processTimeInput.current.value = '';
       this.processArrivalTimeInput.current.value = '';
     } else {
-      alert('Vui lòng điền đầy đủ thông tin tiến trình.');
+      alert('Vui lòng điền đầy đủ thông tin tiến trình và đảm bảo giá trị Thời gian Đến và Thời gian Burst CPU là không âm.');
     }
   };
 
