@@ -38,7 +38,7 @@ class CPUSchedulingSimulation extends Component {
     const runStep = async () => {
       if (this.state.processes.some(process => process.time > 0)) {
         if (!isPaused) {
-          // Filter processes with Arrival Time <= currentTime
+          // Lọc các tiến trình có Thời gian đến <= currentTime
           const availableProcesses = this.state.processes.filter(
             process => process.time > 0 && process.arrivalTime <= this.state.currentTime
           );
@@ -50,7 +50,7 @@ class CPUSchedulingSimulation extends Component {
             return;
           }
 
-          // Sort available processes by CPU Burst Time (time) in ascending order
+          // Sắp xếp các tiến trình có sẵn theo CPU Burst Time (thời gian) theo thứ tự tăng dần
           availableProcesses.sort((a, b) => a.time - b.time);
 
           const nextProcess = availableProcesses[0];
@@ -99,16 +99,16 @@ class CPUSchedulingSimulation extends Component {
     }
 
     if (name && time >= 0 && arrivalTime >= 0) {
-      // Generate a unique id for the process
+      // Tạo một id duy nhất cho tiến trình
       const id = Date.now();
 
-      // Check if the name already exists in the processes
+      // kiểm tra xem tên tiến trình này đã xuất hiện trong danh sách chưa
       if (this.state.initialProcesses.some(process => process.name === name)) {
         alert('Tên tiến trình đã tồn tại. Vui lòng chọn tên khác.');
         return;
       }
 
-      // Update state with the new process
+      // Cập nhật state với process mới
       this.setState(prevState => ({
         processes: [...prevState.processes, { id, name, time, arrivalTime }],
         initialProcesses: [...prevState.initialProcesses, { id, name, time, arrivalTime }],
