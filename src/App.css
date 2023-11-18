@@ -1,22 +1,17 @@
-/* App Container */
-/* src/index.css */
 @import 'bootstrap/dist/css/bootstrap.min.css';
 
 .App {
   text-align: center;
   font-family: Arial, sans-serif;
   font-size: 8px;
-  /*display: flex; */
   justify-content: center;
   align-items: center;
-  /* height: 100vh; */
   background-color: #f0e7dc;
   margin: 0;
   padding: 0;
 }
 
-
-/* CPU Scheduling Simulation Container */
+/* CPU Container */
 .cpu-scheduling-simulation {
   background-color: #f0e7dc;
   border-radius: 4px;
@@ -27,11 +22,9 @@
 
 }
 
-
 .cpu-scheduling-simulation input,
 .cpu-scheduling-simulation button {
   margin: 0 5px;
-
 }
 
 /* Start Button */
@@ -84,7 +77,6 @@ button {
   border: 1px solid #ccc;
   padding: 4px;
   text-align: center;
-
 }
 
 .process-table th {
