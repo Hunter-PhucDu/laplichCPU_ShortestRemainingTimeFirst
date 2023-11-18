@@ -22,10 +22,12 @@ class CPUSchedulingSimulation extends Component {
 
   handleRunSimulation = async () => {
     const { processes, isRunning, isPaused } = this.state;
+
     if (processes.length === 0) {
       alert('Danh sách tiến trình trống!');
       return;
     }
+
     if (isRunning) {
       alert('Mô phỏng đang chạy!');
       return;
@@ -40,22 +42,28 @@ class CPUSchedulingSimulation extends Component {
           const availableProcesses = this.state.processes.filter(
             process => process.time > 0 && process.arrivalTime <= this.state.currentTime
           );
+
           if (availableProcesses.length === 0) {
             const newCurrentTime = this.state.currentTime + 1;
             this.setState({ currentTime: newCurrentTime });
             this.runTimeout = setTimeout(runStep, 100);
             return;
           }
+
           // Sort available processes by CPU Burst Time (time) in ascending order
           availableProcesses.sort((a, b) => a.time - b.time);
+
           const nextProcess = availableProcesses[0];
+
           const remainingProcesses = this.state.processes.map(process =>
             process.id === nextProcess.id ? { ...process, time: process.time - 1 } : process
           );
+
           const newCompletedProcesses = [
             ...this.state.completedProcesses,
             { id: nextProcess.id, startTime: this.state.currentTime, endTime: this.state.currentTime + 1 },
           ];
+
           const newCurrentTime = this.state.currentTime + 1;
           this.setState({ processes: remainingProcesses, completedProcesses: newCompletedProcesses, currentTime: newCurrentTime });
           if (!isPaused) {
@@ -79,22 +87,27 @@ class CPUSchedulingSimulation extends Component {
     const name = this.processNameInput.current.value;
     const time = parseInt(this.processTimeInput.current.value, 10);
     const arrivalTime = parseInt(this.processArrivalTimeInput.current.value, 10);
+
     if (isRunning) {
       alert('Dừng mô phỏng trước khi thêm tiến trình.');
       return;
     }
+
     if (isSimulated) {
       alert('Mô phỏng đã hoàn thành, bạn cần ấn "Refresh" để chạy lại.');
       return;
     }
+
     if (name && time >= 0 && arrivalTime >= 0) {
       // Generate a unique id for the process
       const id = Date.now();
+
       // Check if the name already exists in the processes
       if (this.state.initialProcesses.some(process => process.name === name)) {
         alert('Tên tiến trình đã tồn tại. Vui lòng chọn tên khác.');
         return;
       }
+
       // Update state with the new process
       this.setState(prevState => ({
         processes: [...prevState.processes, { id, name, time, arrivalTime }],
@@ -110,14 +123,17 @@ class CPUSchedulingSimulation extends Component {
 
   handleDeleteProcess = id => {
     const { isRunning, isSimulated } = this.state;
+
     if (isRunning) {
       alert('Dừng mô phỏng trước khi xóa tiến trình.');
       return;
     }
+
     if (isSimulated) {
       alert('Mô phỏng đã hoàn thành, bạn cần ấn "Refresh" để xóa tiến trình.');
       return;
     }
+
     const updatedProcesses = this.state.processes.filter(process => process.id !== id);
     this.setState(prevState => ({
       processes: updatedProcesses,
@@ -129,10 +145,12 @@ class CPUSchedulingSimulation extends Component {
 
   handleResetPage = () => {
     const { isRunning } = this.state;
+
     if (isRunning) {
       alert('Dừng mô phỏng trước khi đặt lại.');
       return;
     }
+
     this.setState({
       processes: [],
       initialProcesses: [],
@@ -146,10 +164,12 @@ class CPUSchedulingSimulation extends Component {
 
   handleReFresh = () => {
     const { isRunning, initialProcesses } = this.state;
+
     if (isRunning) {
       alert('Dừng mô phỏng trước khi đặt lại.');
       return;
     }
+
     this.setState({
       processes: [...initialProcesses],
       currentTime: 0,
