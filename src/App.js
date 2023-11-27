@@ -13,6 +13,7 @@ class CPUSchedulingSimulation extends Component {
       isRunning: false,
       isSimulated: false,
       isPaused: false,
+      selectedScheduleMetrics: null,
     };
     this.processNameInput = React.createRef();
     this.processArrivalTimeInput = React.createRef();
@@ -221,6 +222,220 @@ class CPUSchedulingSimulation extends Component {
     this.setState({ isPaused: true });
   };
 
+  calculateStatisticsForSelectedSchedule = () => {
+    const { processes, completedProcesses } = this.state;
+
+    // Kiểm tra xem đã có quá trình mô phỏng chưa
+    if (completedProcesses.length === 0) {
+      alert('Chưa có quá trình mô phỏng nào được thực hiện.');
+      return null;
+    }
+
+    // Tính toán các giá trị thống kê dựa trên lịch trình đã chọn
+    const processIds = processes.map(process => process.id);
+
+    const selectedScheduleMetrics = {
+      averageTurnaroundTime: this.calculateAverageTurnaroundTime(completedProcesses),
+      averageWaitingTime: this.calculateAverageWaitingTime(completedProcesses),
+      averageResponseTime: this.calculateAverageResponseTime(completedProcesses),
+      perProcessMetrics: this.calculatePerProcessMetrics(processIds, completedProcesses),
+    };
+
+    return selectedScheduleMetrics;
+  };
+
+  calculateAverageTurnaroundTime = completedProcesses => {
+    const totalTurnaroundTime = completedProcesses.reduce((sum, process) => sum + (process.endTime - process.startTime), 0);
+    return completedProcesses.length ? totalTurnaroundTime / completedProcesses.length : 0;
+  };
+
+  calculateAverageWaitingTime = completedProcesses => {
+    const totalWaitingTime = completedProcesses.reduce((sum, process) => sum + (process.startTime - process.arrivalTime), 0);
+    return completedProcesses.length ? totalWaitingTime / completedProcesses.length : 0;
+  };
+
+  calculateAverageResponseTime = completedProcesses => {
+    const totalResponseTime = completedProcesses.reduce((sum, process) => sum + (process.startTime - process.arrivalTime), 0);
+    return completedProcesses.length ? totalResponseTime / completedProcesses.length : 0;
+  };
+
+  calculatePerProcessMetrics = (processIds, completedProcesses) => {
+    const { processes } = this.state; // Thêm dòng này để truy cập biến processes
+
+    return processIds.map(processId => {
+      const processCompleted = completedProcesses.find(item => item.id === processId);
+
+      if (processCompleted) {
+        const turnaroundTime = processCompleted.endTime - processCompleted.startTime;
+        const normalizedTurnaroundTime = turnaroundTime / processes.find(process => process.id === processId).time;
+        const waitingTime = processCompleted.startTime - processes.find(process => process.id === processId).arrivalTime;
+        const responseTime = processCompleted.startTime - processes.find(process => process.id === processId).arrivalTime;
+
+        return {
+          processName: processes.find(process => process.id === processId).name,
+          arrivalTime: processes.find(process => process.id === processId).arrivalTime,
+          cpuBurstTime: processes.find(process => process.id === processId).time,
+          averageTurnaroundTime: turnaroundTime,
+          averageNormalizedTurnaroundTime: normalizedTurnaroundTime,
+          averageWaitingTime: waitingTime,
+          averageResponseTime: responseTime,
+        };
+      } else {
+        return {
+          processName: 'N/A',
+          arrivalTime: 'N/A',
+          cpuBurstTime: 'N/A',
+          averageTurnaroundTime: 'N/A',
+          averageNormalizedTurnaroundTime: 'N/A',
+          averageWaitingTime: 'N/A',
+          averageResponseTime: 'N/A',
+        };
+      }
+    });
+  };
+
+
+  // Thêm hàm để xử lý sự kiện khi nhấn nút "Create statistics for selected schedule"
+  handleCreateStatistics = () => {
+    if (this.state.processes.length > 0) {
+      const selectedScheduleMetrics = this.calculateStatisticsForSelectedSchedule();
+      this.setState({ selectedScheduleMetrics });
+    } else {
+      alert('Danh sách tiến trình trống!');
+    }
+  };
+
+  // Thêm hàm renderStatistics trong component
+  // renderStatistics = () => {
+  //   const { selectedScheduleMetrics } = this.state;
+
+  //   return (
+  //     <div>
+  //       {selectedScheduleMetrics && (
+  //         <div>
+  //           <h4>Selected Schedule Metrics</h4>
+  //           <table className="selected-schedule-metrics-table">
+  //             <thead>
+  //               <tr>
+  //                 <th>Metric</th>
+  //                 <th>Value</th>
+  //               </tr>
+  //             </thead>
+  //             <tbody>
+  //               <tr>
+  //                 <td>Average Turnaround Time</td>
+  //                 <td>{selectedScheduleMetrics.averageTurnaroundTime}</td>
+  //               </tr>
+  //               <tr>
+  //                 <td>Average Waiting Time</td>
+  //                 <td>{selectedScheduleMetrics.averageWaitingTime}</td>
+  //               </tr>
+  //               <tr>
+  //                 <td>Average Response Time</td>
+  //                 <td>{selectedScheduleMetrics.averageResponseTime}</td>
+  //               </tr>
+  //             </tbody>
+  //           </table>
+
+  //           <h4>Per Process Metrics</h4>
+  //           <table className="per-process-metrics-table">
+  //             <thead>
+  //               <tr>
+  //                 <th>Process Name</th>
+  //                 <th>Arrival Time</th>
+  //                 <th>CPU Burst Time</th>
+  //                 <th>Average Turnaround Time</th>
+  //                 <th>Average Normalized Turnaround Time</th>
+  //                 <th>Average Waiting Time</th>
+  //                 <th>Average Response Time</th>
+  //               </tr>
+  //             </thead>
+  //             <tbody>
+  //               {selectedScheduleMetrics.perProcessMetrics.map((process, index) => (
+  //                 <tr key={index}>
+  //                   <td>{process.processName}</td>
+  //                   <td>{process.arrivalTime}</td>
+  //                   <td>{process.cpuBurstTime}</td>
+  //                   <td>{process.averageTurnaroundTime}</td>
+  //                   <td>{process.averageNormalizedTurnaroundTime}</td>
+  //                   <td>{process.averageWaitingTime}</td>
+  //                   <td>{process.averageResponseTime}</td>
+  //                 </tr>
+  //               ))}
+  //             </tbody>
+  //           </table>
+  //         </div>
+  //       )}
+  //     </div>
+  //   );
+  // };
+
+  renderStatistics = () => {
+    const { selectedScheduleMetrics } = this.state;
+
+    return (
+      <div>
+        {selectedScheduleMetrics && (
+          <div>
+            <h4>Selected Schedule Metrics</h4>
+            <table className="selected-schedule-metrics-table">
+              <thead>
+                <tr>
+                  <th>Metric</th>
+                  <th>Value</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Average Turnaround Time</td>
+                  <td>{selectedScheduleMetrics.averageTurnaroundTime}</td>
+                </tr>
+                <tr>
+                  <td>Average Waiting Time</td>
+                  <td>{selectedScheduleMetrics.averageWaitingTime}</td>
+                </tr>
+                <tr>
+                  <td>Average Response Time</td>
+                  <td>{selectedScheduleMetrics.averageResponseTime}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <h4>Per Process Metrics</h4>
+            <table className="per-process-metrics-table">
+              <thead>
+                <tr>
+                  <th>Process Name</th>
+                  <th>Arrival Time</th>
+                  <th>CPU Burst Time</th>
+                  <th>Average Turnaround Time</th>
+                  <th>Average Normalized Turnaround Time</th>
+                  <th>Average Waiting Time</th>
+                  <th>Average Response Time</th>
+                </tr>
+              </thead>
+              <tbody>
+                {selectedScheduleMetrics.perProcessMetrics.map((process, index) => (
+                  <tr key={index}>
+                    <td>{process.processName}</td>
+                    <td>{process.arrivalTime}</td>
+                    <td>{process.cpuBurstTime}</td>
+                    <td>{process.averageTurnaroundTime}</td>
+                    <td>{process.averageNormalizedTurnaroundTime}</td>
+                    <td>{process.averageWaitingTime}</td>
+                    <td>{process.averageResponseTime}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+
+
   render() {
     const { initialProcesses, isRunning, isSimulated, isPaused } = this.state;
     const totalTime = 200;
@@ -228,50 +443,63 @@ class CPUSchedulingSimulation extends Component {
     const currentTime = this.state.currentTime;
 
     return (
-      <div className="cpu-scheduling-simulation">
+      <div className="container-fluid cpu-scheduling-simulation">
+        <div class="row">
+          <div className="col-mt-2 tieuDe">
+            <p>Nguyên lý hệ điều hành</p>
+            <p>Mô phỏng giải thuật lập lịch CPU SRTF (Shortest Remaining Time First)</p>
+          </div>
+        </div>
         <br />
-        <h2>Nguyên lý hệ điều hành</h2>
-        <h2>Bài tập lớn: Mô phỏng giải thuật lập lịch CPU SRTF (Shortest Remaining Time First)</h2>
-        <div className="process-list">
-          <h2>Process List</h2>
-          <table>
-            <thead>
-              <tr>
-                <th>Process name</th>
-                <th>Arrival Time</th>
-                <th>CPU Burst Time</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {initialProcesses.map(process => (
-                <tr key={process.id}>
-                  <td>{process.name}</td>
-                  <td>{process.arrivalTime}</td>
-                  <td>
-                    {process.name === 'CPU Burst Time' ? (
-                      <div>{process.time}</div>
-                    ) : (
-                      process.time
-                    )}
-                  </td>
-                  <td>
-                    <button onClick={() => this.handleDeleteProcess(process.id)} disabled={isRunning}>
-                      Delete
-                    </button>
-                  </td>
+
+        <div class="row dinhNghia">
+          <div className=' container-fluid  thanhNgang'>Định nghĩa</div>
+          <div><br /> </div>
+          <div class="col add-process-form">
+            <br />
+            <p className='phongChu'>Thêm tiến trình</p>
+            <input type="text" placeholder="Process name" ref={this.processNameInput} />
+            <input type="number" placeholder="Arrival Time" ref={this.processArrivalTimeInput} />
+            <input type="number" placeholder="CPU Burst Time" ref={this.processTimeInput} />
+            <button onClick={this.handleAddProcess}>Add</button>
+          </div>
+          <div className="col process-list">
+            <br />
+            <p className='phongChu'>Danh sách các tiến trình</p>
+            <table style={{ width: 600 }}>
+              <thead>
+                <tr>
+                  <th>Process name</th>
+                  <th>Arrival Time</th>
+                  <th>CPU Burst Time</th>
+                  <th>Action</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {initialProcesses.map(process => (
+                  <tr key={process.id}>
+                    <td>{process.name}</td>
+                    <td>{process.arrivalTime}</td>
+                    <td>
+                      {process.name === 'CPU Burst Time' ? (
+                        <div>{process.time}</div>
+                      ) : (
+                        process.time
+                      )}
+                    </td>
+                    <td>
+                      <button onClick={() => this.handleDeleteProcess(process.id)} disabled={isRunning}>
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div><br /> </div>
         </div>
         <br />
-        <div className="add-process-form">
-          <input type="text" placeholder="Process name" ref={this.processNameInput} />
-          <input type="number" placeholder="Arrival Time" ref={this.processArrivalTimeInput} />
-          <input type="number" placeholder="CPU Burst Time" ref={this.processTimeInput} />
-          <button onClick={this.handleAddProcess}>Add</button>
-        </div>
         <div className="controls">
           <div>
             <button onClick={isRunning ? null : isSimulated ? this.handleReFresh : this.handleRunSimulation} disabled={isRunning}>
@@ -288,51 +516,63 @@ class CPUSchedulingSimulation extends Component {
             </button>
           </div>
         </div>
-        <div className='moPhong'>Mô phỏng</div>
-        <div className="table-container">
-          <div className="table-scroll">
-            <table className="process-table">
-              <thead>
-                <tr>
-                  <th>Process name</th>
-                  {Array(totalTime)
-                    .fill()
-                    .map((_, index) => (
-                      <th
-                        key={index}
-                        className={currentTime === index + 1 ? 'running' : ''}
-                        style={{ width: columnWidth }}
-                      >
-                        {index}
-                      </th>
-                    ))}
-                </tr>
-              </thead>
-              <tbody>
-                {initialProcesses.map(process => (
-                  <tr key={process.id}>
-                    <td>{process.name}</td>
+        <br />
+
+        <div class="row moPhong">
+          <div className=' container-fluid  thanhNgang'>Mô phỏng</div>
+          <div className="table-container">
+            <div className="table-scroll">
+              <table className="process-table">
+                <thead>
+                  <tr>
+                    <th>Process name</th>
                     {Array(totalTime)
                       .fill()
                       .map((_, index) => (
-                        <td
+                        <th
                           key={index}
-                          className={
-                            this.state.completedProcesses.some(item => {
-                              return item.id === process.id && index >= item.startTime && index < item.endTime;
-                            })
-                              ? 'completed'
-                              : ''
-                          }
+                          className={currentTime === index + 1 ? 'running' : ''}
                           style={{ width: columnWidth }}
-                        ></td>
+                        >
+                          {index}
+                        </th>
                       ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {initialProcesses.map(process => (
+                    <tr key={process.id}>
+                      <td>{process.name}</td>
+                      {Array(totalTime)
+                        .fill()
+                        .map((_, index) => (
+                          <td
+                            key={index}
+                            className={
+                              this.state.completedProcesses.some(item => {
+                                return item.id === process.id && index >= item.startTime && index < item.endTime;
+                              })
+                                ? 'completed'
+                                : ''
+                            }
+                            style={{ width: columnWidth }}
+                          ></td>
+                        ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
+        <br />
+
+        <div className="row soLieuThongKe">
+          <div className="container-fluid thanhNgang">Số liệu thống kê</div>
+          {this.renderStatistics()}
+          <button onClick={this.handleCreateStatistics}>Create statistics for selected schedule</button>
+        </div>
+
       </div>
     );
   }

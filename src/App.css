@@ -2,26 +2,49 @@
 
 .App {
   text-align: center;
-  font-family: Arial, sans-serif;
+  font-family: 'Droid Sans', sans-serif;
   font-size: 8px;
   justify-content: center;
   align-items: center;
-  background-color: #f0e7dc;
+  /* background-color: #f0e7dc; */
   margin: 0;
   padding: 0;
 }
 
 /* CPU Container */
 .cpu-scheduling-simulation {
-  background-color: #f0e7dc;
+  /* background-color: #f0e7dc; */
+  background: #fffefd;
   border-radius: 4px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   padding: 20px;
   font-size: 14px;
   text-align: center;
-
+  max-width: 100%;
+}
+.tieuDe {
+  font-size: 26px;
+  font-weight: bold;
+  
+}
+.dinhNghia, .moPhong {
+  background-color: #f0e7dc;
+}
+.phongChu {
+  font-size: 20px;
+  font-weight: bold;  
 }
 
+.thanhNgang {
+  font-size: 14px;
+  text-align: left;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  background-color: #ac1034;
+  color: #fff;
+  max-width: 100%;
+  font-weight: bold;
+}
 .cpu-scheduling-simulation input,
 .cpu-scheduling-simulation button {
   margin: 0 5px;
@@ -34,9 +57,11 @@ button {
   background-color: #ac1034;
   color: #fff;
   border: none;
-  border-radius: 4px;
+  /* border-radius: 4px; */
   cursor: pointer;
-  margin: 0 5px;
+  /* margin: 0 5px; */
+  text-align: center;
+  width: 90px;
 }
 
 /* Table Container */
@@ -46,14 +71,6 @@ button {
   display: inline-block;
   font-size: 8px;
 
-}
-
-.moPhong {
-  font-size: 24px;
-  text-align: left;
-  background-color: #ac1034;
-  color: #fff;
-  padding-left: 10px;
 }
 
 /* Table Scroll Container */
