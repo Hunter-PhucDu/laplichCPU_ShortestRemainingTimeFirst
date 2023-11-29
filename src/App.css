@@ -6,14 +6,12 @@
   font-size: 8px;
   justify-content: center;
   align-items: center;
-  /* background-color: #f0e7dc; */
   margin: 0;
   padding: 0;
 }
 
 /* CPU Container */
 .cpu-scheduling-simulation {
-  /* background-color: #f0e7dc; */
   background: #fffefd;
   border-radius: 4px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -33,6 +31,9 @@
 .phongChu {
   font-size: 20px;
   font-weight: bold;  
+}
+.can{
+text-align: left;
 }
 
 .thanhNgang {
@@ -57,11 +58,19 @@ button {
   background-color: #ac1034;
   color: #fff;
   border: none;
-  /* border-radius: 4px; */
   cursor: pointer;
-  /* margin: 0 5px; */
   text-align: center;
+}
+
+.controls button {
+  border-radius: 10px;
   width: 90px;
+}
+.soLieuThongKe button {
+  /* float: left; */
+  border-radius: 5px;
+  padding: 5px 15px;
+  width: 300px;
 }
 
 /* Table Container */

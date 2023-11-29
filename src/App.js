@@ -108,11 +108,11 @@ class CPUSchedulingSimulation extends Component {
         alert('Tên tiến trình đã tồn tại. Vui lòng chọn tên khác.');
         return;
       }
-
+      const constCPUtime = parseInt(this.processTimeInput.current.value, 10);
       // cập nhật state với tiến trình mới
       this.setState(prevState => ({
-        processes: [...prevState.processes, { id, name, time, arrivalTime }],
-        initialProcesses: [...prevState.initialProcesses, { id, name, time, arrivalTime }],
+        processes: [...prevState.processes, { id, name, time, arrivalTime, constCPUtime }],
+        initialProcesses: [...prevState.initialProcesses, { id, name, time, arrivalTime, constCPUtime }],
       }));
       this.processNameInput.current.value = '';
       this.processTimeInput.current.value = '';
@@ -244,19 +244,90 @@ class CPUSchedulingSimulation extends Component {
     return selectedScheduleMetrics;
   };
 
-  calculateAverageTurnaroundTime = completedProcesses => {
-    const totalTurnaroundTime = completedProcesses.reduce((sum, process) => sum + (process.endTime - process.startTime), 0);
-    return completedProcesses.length ? totalTurnaroundTime / completedProcesses.length : 0;
+  calculateAverageTurnaroundTime = () => {
+    const { processes } = this.state;
+    let currentTime = 0;
+    let totalTurnaroundTime = 0;
+
+    // Sắp xếp các tiến trình theo thời gian đến (arrival time)
+    const sortedProcesses = [...processes].sort((a, b) => a.arrivalTime - b.arrivalTime);
+
+    sortedProcesses.forEach(process => {
+      // Nếu tiến trình chưa đến thì chờ đến thời điểm đến của tiến trình
+      if (process.arrivalTime > currentTime) {
+        currentTime = process.arrivalTime;
+      }
+
+      // Tính thời gian quay vòng và cập nhật thông tin tiến trình
+      process.turnaroundTime = currentTime + process.constCPUtime - process.arrivalTime;
+      totalTurnaroundTime += process.turnaroundTime;
+      currentTime += process.constCPUtime;
+    });
+
+    // Trả về thời gian quay vòng trung bình
+    return processes.length ? totalTurnaroundTime / processes.length : 0;
   };
 
-  calculateAverageWaitingTime = completedProcesses => {
-    const totalWaitingTime = completedProcesses.reduce((sum, process) => sum + (process.startTime - process.arrivalTime), 0);
-    return completedProcesses.length ? totalWaitingTime / completedProcesses.length : 0;
+  calculateAverageWaitingTime = () => {
+    const { processes } = this.state;
+    let currentTime = 0;
+    let totalWaitingTime = 0;
+    let currentProcessStartTime = 0; // Thêm biến để lưu thời điểm tiến trình đang chạy bắt đầu thực hiện CPU
+
+    // Sắp xếp các tiến trình theo thời gian đến (arrival time)
+    const sortedProcesses = [...processes].sort((a, b) => a.arrivalTime - b.arrivalTime);
+
+    sortedProcesses.forEach(process => {
+      // Nếu tiến trình chưa đến thì cập nhật thời gian hiện tại
+      if (process.arrivalTime > currentTime) {
+        currentTime = process.arrivalTime;
+      }
+
+      // Tính thời gian chờ của tiến trình và cập nhật thông tin tiến trình
+      process.waitingTime = currentTime - process.arrivalTime + (currentProcessStartTime - process.arrivalTime);
+      totalWaitingTime += process.waitingTime;
+
+      // Cập nhật thời gian hiện tại dựa trên thời gian thực hiện của tiến trình
+      currentTime += process.constCPUtime;
+
+      // Cập nhật thời gian hiện tại nếu tiến trình đã hoàn thành và tiến trình kế tiếp chưa đến
+      if (process.time === 0) {
+        currentTime = Math.max(currentTime, process.arrivalTime);
+      }
+
+      // Cập nhật thời điểm bắt đầu tiến trình đang chạy (đã dừng)
+      currentProcessStartTime = currentTime;
+    });
+
+    // Trả về thời gian chờ trung bình của tất cả các tiến trình
+    return processes.length ? totalWaitingTime / processes.length : 0;
   };
 
-  calculateAverageResponseTime = completedProcesses => {
-    const totalResponseTime = completedProcesses.reduce((sum, process) => sum + (process.startTime - process.arrivalTime), 0);
-    return completedProcesses.length ? totalResponseTime / completedProcesses.length : 0;
+z
+  calculateAverageResponseTime = () => {
+    const { processes } = this.state;
+    let currentTime = 0;
+    let totalResponseTime = 0;
+
+    // Sắp xếp các tiến trình theo thời gian đến (arrival time)
+    const sortedProcesses = [...processes].sort((a, b) => a.arrivalTime - b.arrivalTime);
+
+    sortedProcesses.forEach(process => {
+      // Nếu tiến trình chưa đến thì cập nhật thời gian hiện tại
+      if (process.arrivalTime > currentTime) {
+        currentTime = process.arrivalTime;
+      }
+
+      // Tính thời gian đáp ứng của tiến trình và cập nhật thông tin tiến trình
+      process.responseTime = currentTime - process.arrivalTime;
+      totalResponseTime += process.responseTime;
+
+      // Cập nhật thời gian hiện tại dựa trên thời gian thực hiện của tiến trình
+      currentTime += process.constCPUtime;
+    });
+
+    // Trả về thời gian đáp ứng trung bình của tất cả các tiến trình
+    return processes.length ? totalResponseTime / processes.length : 0;
   };
 
   calculatePerProcessMetrics = (processIds, completedProcesses) => {
@@ -266,18 +337,13 @@ class CPUSchedulingSimulation extends Component {
       const processCompleted = completedProcesses.find(item => item.id === processId);
 
       if (processCompleted) {
-        const turnaroundTime = processCompleted.endTime - processCompleted.startTime;
-        const normalizedTurnaroundTime = turnaroundTime / processes.find(process => process.id === processId).time;
-        const waitingTime = processCompleted.startTime - processes.find(process => process.id === processId).arrivalTime;
+        const constCPUtime = processes.find((process) => process.id === processId).constCPUtime;
         const responseTime = processCompleted.startTime - processes.find(process => process.id === processId).arrivalTime;
 
         return {
           processName: processes.find(process => process.id === processId).name,
           arrivalTime: processes.find(process => process.id === processId).arrivalTime,
-          cpuBurstTime: processes.find(process => process.id === processId).time,
-          averageTurnaroundTime: turnaroundTime,
-          averageNormalizedTurnaroundTime: normalizedTurnaroundTime,
-          averageWaitingTime: waitingTime,
+          cpuBurstTime: constCPUtime - processes.find((process) => process.id === processId).time,
           averageResponseTime: responseTime,
         };
       } else {
@@ -285,15 +351,11 @@ class CPUSchedulingSimulation extends Component {
           processName: 'N/A',
           arrivalTime: 'N/A',
           cpuBurstTime: 'N/A',
-          averageTurnaroundTime: 'N/A',
-          averageNormalizedTurnaroundTime: 'N/A',
-          averageWaitingTime: 'N/A',
           averageResponseTime: 'N/A',
         };
       }
     });
   };
-
 
   // Thêm hàm để xử lý sự kiện khi nhấn nút "Create statistics for selected schedule"
   handleCreateStatistics = () => {
@@ -305,70 +367,6 @@ class CPUSchedulingSimulation extends Component {
     }
   };
 
-  // Thêm hàm renderStatistics trong component
-  // renderStatistics = () => {
-  //   const { selectedScheduleMetrics } = this.state;
-
-  //   return (
-  //     <div>
-  //       {selectedScheduleMetrics && (
-  //         <div>
-  //           <h4>Selected Schedule Metrics</h4>
-  //           <table className="selected-schedule-metrics-table">
-  //             <thead>
-  //               <tr>
-  //                 <th>Metric</th>
-  //                 <th>Value</th>
-  //               </tr>
-  //             </thead>
-  //             <tbody>
-  //               <tr>
-  //                 <td>Average Turnaround Time</td>
-  //                 <td>{selectedScheduleMetrics.averageTurnaroundTime}</td>
-  //               </tr>
-  //               <tr>
-  //                 <td>Average Waiting Time</td>
-  //                 <td>{selectedScheduleMetrics.averageWaitingTime}</td>
-  //               </tr>
-  //               <tr>
-  //                 <td>Average Response Time</td>
-  //                 <td>{selectedScheduleMetrics.averageResponseTime}</td>
-  //               </tr>
-  //             </tbody>
-  //           </table>
-
-  //           <h4>Per Process Metrics</h4>
-  //           <table className="per-process-metrics-table">
-  //             <thead>
-  //               <tr>
-  //                 <th>Process Name</th>
-  //                 <th>Arrival Time</th>
-  //                 <th>CPU Burst Time</th>
-  //                 <th>Average Turnaround Time</th>
-  //                 <th>Average Normalized Turnaround Time</th>
-  //                 <th>Average Waiting Time</th>
-  //                 <th>Average Response Time</th>
-  //               </tr>
-  //             </thead>
-  //             <tbody>
-  //               {selectedScheduleMetrics.perProcessMetrics.map((process, index) => (
-  //                 <tr key={index}>
-  //                   <td>{process.processName}</td>
-  //                   <td>{process.arrivalTime}</td>
-  //                   <td>{process.cpuBurstTime}</td>
-  //                   <td>{process.averageTurnaroundTime}</td>
-  //                   <td>{process.averageNormalizedTurnaroundTime}</td>
-  //                   <td>{process.averageWaitingTime}</td>
-  //                   <td>{process.averageResponseTime}</td>
-  //                 </tr>
-  //               ))}
-  //             </tbody>
-  //           </table>
-  //         </div>
-  //       )}
-  //     </div>
-  //   );
-  // };
 
   renderStatistics = () => {
     const { selectedScheduleMetrics } = this.state;
@@ -377,41 +375,39 @@ class CPUSchedulingSimulation extends Component {
       <div>
         {selectedScheduleMetrics && (
           <div>
-            <h4>Selected Schedule Metrics</h4>
+            <p className='phongChu can'>Tất cả các tiến trình</p>
             <table className="selected-schedule-metrics-table">
               <thead>
                 <tr>
-                  <th>Metric</th>
-                  <th>Value</th>
+                  <th>Đại lượng</th>
+                  <th>Giá trị</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td>Average Turnaround Time</td>
+                  <td>Thời gian quay vòng trung bình</td>
                   <td>{selectedScheduleMetrics.averageTurnaroundTime}</td>
                 </tr>
                 <tr>
-                  <td>Average Waiting Time</td>
+                  <td>Thời gian chờ trung bình</td>
                   <td>{selectedScheduleMetrics.averageWaitingTime}</td>
                 </tr>
                 <tr>
-                  <td>Average Response Time</td>
+                  <td>Thời gian đáp ứng trung bình</td>
                   <td>{selectedScheduleMetrics.averageResponseTime}</td>
                 </tr>
               </tbody>
             </table>
 
-            <h4>Per Process Metrics</h4>
+            <hr/>
+            <p className='phongChu can'>Số liệu trên mỗi tiến trình</p>
             <table className="per-process-metrics-table">
               <thead>
                 <tr>
-                  <th>Process Name</th>
-                  <th>Arrival Time</th>
-                  <th>CPU Burst Time</th>
-                  <th>Average Turnaround Time</th>
-                  <th>Average Normalized Turnaround Time</th>
-                  <th>Average Waiting Time</th>
-                  <th>Average Response Time</th>
+                  <th>Process Name  |</th>
+                  <th>Arrival Time   |</th>
+                  <th>CPU Burst Time   |</th>
+                  <th>Thời gian phản hồi trung bình  |</th>
                 </tr>
               </thead>
               <tbody>
@@ -420,9 +416,6 @@ class CPUSchedulingSimulation extends Component {
                     <td>{process.processName}</td>
                     <td>{process.arrivalTime}</td>
                     <td>{process.cpuBurstTime}</td>
-                    <td>{process.averageTurnaroundTime}</td>
-                    <td>{process.averageNormalizedTurnaroundTime}</td>
-                    <td>{process.averageWaitingTime}</td>
                     <td>{process.averageResponseTime}</td>
                   </tr>
                 ))}
@@ -433,7 +426,6 @@ class CPUSchedulingSimulation extends Component {
       </div>
     );
   };
-
 
 
   render() {
@@ -569,8 +561,9 @@ class CPUSchedulingSimulation extends Component {
 
         <div className="row soLieuThongKe">
           <div className="container-fluid thanhNgang">Số liệu thống kê</div>
+          <p></p>
           {this.renderStatistics()}
-          <button onClick={this.handleCreateStatistics}>Create statistics for selected schedule</button>
+          <button onClick={this.handleCreateStatistics}>Tạo số liệu thống kê</button>
         </div>
 
       </div>
