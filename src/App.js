@@ -39,27 +39,30 @@ class CPUSchedulingSimulation extends Component {
     const runStep = async () => {
       if (this.state.processes.some(process => process.time > 0)) {
         if (!isPaused) {
-          // Lọc danh sách các tiến trình với Arrival Time <= currentTime
+          // Lọc danh sách các tiến trình với Arrival Time <= currentTime (thời gian hiện tại)
           const availableProcesses = this.state.processes.filter(
             process => process.time > 0 && process.arrivalTime <= this.state.currentTime
           );
-
+          // Nếu không có tiến trình nào thì ta đẩy thời gian hiện tại thêm 1 đơn vị
           if (availableProcesses.length === 0) {
             const newCurrentTime = this.state.currentTime + 1;
             this.setState({ currentTime: newCurrentTime });
-            this.runTimeout = setTimeout(runStep, 100);
+            this.runTimeout = setTimeout(runStep, 400);
             return;
           }
 
           // Kiểm tra xem trong danh sách các tiến trình, tiến trình nào có CPU Burst Time ngắn nhất để chạy trước
           availableProcesses.sort((a, b) => a.time - b.time);
-
+          
+          // lấy tiến trình đầu tiên trong danh sách các tiến trình sau khi duyệt
           const nextProcess = availableProcesses[0];
 
+          //Giảm đi 1 đơn vị thời gian (CPU Burst Time) của tiến trình được chọn (nextProcess). Nếu process.id trùng với nextProcess.id
           const remainingProcesses = this.state.processes.map(process =>
             process.id === nextProcess.id ? { ...process, time: process.time - 1 } : process
           );
-
+          
+          //Giữ lại lịch sử của các đơn vị thời gian đã hoàn thành của các tiến trình, để sau này lấy thời gian ra để tính toán
           const newCompletedProcesses = [
             ...this.state.completedProcesses,
             { id: nextProcess.id, startTime: this.state.currentTime, endTime: this.state.currentTime + 1 },
@@ -68,15 +71,61 @@ class CPUSchedulingSimulation extends Component {
           const newCurrentTime = this.state.currentTime + 1;
           this.setState({ processes: remainingProcesses, completedProcesses: newCompletedProcesses, currentTime: newCurrentTime });
           if (!isPaused) {
-            /* chỉnh thời gian delay khi chạy tiến trình */
+            /* gọi đệ quy hàm runStep tại mỗi bước mô phỏng */
             this.runTimeout = setTimeout(runStep, 400);
           }
         }
       } else {
+        // nếu tất cả các tiến trình đều có cpu burst time về 0 thì cập nhật đã hoàn thành mô phỏng
         this.setState({ isRunning: false, isSimulated: true, isPaused: false });
       }
     };
+
+    // gọi lần đầu để bắt đầu quá trình thực hiện mô phỏng
     runStep();
+  };
+
+  runStep = () => {
+    if (this.state.processes.some(process => process.time > 0)) {
+      if (!this.state.isPaused) {
+        const availableProcesses = this.state.processes.filter(
+          process => process.time > 0 && process.arrivalTime <= this.state.currentTime
+        );
+
+        if (availableProcesses.length === 0) {
+          const newCurrentTime = this.state.currentTime + 1;
+          this.setState({ currentTime: newCurrentTime });
+          this.runTimeout = setTimeout(this.runStep, 400);
+          return;
+        }
+        
+        //lọc tiến trình có cpu burst time ngắn nhất
+        const nextProcess = availableProcesses.reduce((min, process) => {
+          return process.time < min.time ? process : min;
+        }, availableProcesses[0]);
+
+        // tạo mảng mới remainingProcesses để sao chép tất cả thuộc tính của tiến trình hiện tại) và giảm thời gian còn lại (time) đi 1 đơn vị.
+        const remainingProcesses = this.state.processes.map(process =>
+          process.id === nextProcess.id ? { ...process, time: process.time - 1 } : process
+        );
+        
+        //Sử dụng mảng này giúp ứng dụng theo dõi và hiển thị thông tin về các tiến trình đã hoàn thành trong giao diện người dùng.
+        const newCompletedProcesses = [
+          ...this.state.completedProcesses,
+          { id: nextProcess.id, startTime: this.state.currentTime, endTime: this.state.currentTime + 1 },
+        ];
+        
+        // cập nhật trạng thái của ứng dụng sau mỗi bước mô phỏng
+        const newCurrentTime = this.state.currentTime + 1;
+        this.setState({ processes: remainingProcesses, completedProcesses: newCompletedProcesses, currentTime: newCurrentTime });
+
+        if (!this.state.isPaused) {
+          this.runTimeout = setTimeout(this.runStep, 400);
+        }
+      }
+    } else {
+      this.setState({ isRunning: false, isSimulated: true, isPaused: false });
+    }
   };
 
   sleep = ms => {
@@ -126,7 +175,7 @@ class CPUSchedulingSimulation extends Component {
     const { isSimulated } = this.state;
 
     if (isSimulated) {
-      alert('Mô phỏng đã hoàn thành, bạn cần ấn "Refresh" để có thể xóa tiến trình.');
+      alert('Bạn cần ấn "Refresh" để có thể xóa tiến trình.');
       return;
     }
 
@@ -176,45 +225,6 @@ class CPUSchedulingSimulation extends Component {
     this.setState({ isPaused: false }, () => {
       this.runStep();
     });
-  };
-
-  runStep = () => {
-    if (this.state.processes.some(process => process.time > 0)) {
-      if (!this.state.isPaused) {
-        const availableProcesses = this.state.processes.filter(
-          process => process.time > 0 && process.arrivalTime <= this.state.currentTime
-        );
-
-        if (availableProcesses.length === 0) {
-          const newCurrentTime = this.state.currentTime + 1;
-          this.setState({ currentTime: newCurrentTime });
-          this.runTimeout = setTimeout(this.runStep, 100);
-          return;
-        }
-
-        const nextProcess = availableProcesses.reduce((min, process) => {
-          return process.time < min.time ? process : min;
-        }, availableProcesses[0]);
-
-        const remainingProcesses = this.state.processes.map(process =>
-          process.id === nextProcess.id ? { ...process, time: process.time - 1 } : process
-        );
-
-        const newCompletedProcesses = [
-          ...this.state.completedProcesses,
-          { id: nextProcess.id, startTime: this.state.currentTime, endTime: this.state.currentTime + 1 },
-        ];
-
-        const newCurrentTime = this.state.currentTime + 1;
-        this.setState({ processes: remainingProcesses, completedProcesses: newCompletedProcesses, currentTime: newCurrentTime });
-
-        if (!this.state.isPaused) {
-          this.runTimeout = setTimeout(this.runStep, 400);
-        }
-      }
-    } else {
-      this.setState({ isRunning: false, isSimulated: true, isPaused: false });
-    }
   };
 
   clearRunTimeout = () => {
