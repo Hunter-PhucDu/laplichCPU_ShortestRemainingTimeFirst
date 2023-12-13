@@ -529,12 +529,16 @@ z
               <table className="process-table">
                 <thead>
                   <tr>
+                  {/* Một ô header cố định có nội dung "Process name". */}
                     <th>Process name</th>
+                    {/* Các ô header tiếp theo được tạo ra thông qua việc sử dụng Array(totalTime).fill().map(...). 
+                    Mỗi ô được đánh số thứ thự  */}
                     {Array(totalTime)
                       .fill()
                       .map((_, index) => (
                         <th
                           key={index}
+                          // và cho ô header đấy chuyển màu vàng tại thời điểm đang chạy-> style("running")
                           className={currentTime === index + 1 ? 'running' : ''}
                           style={{ width: columnWidth }}
                         >
@@ -545,14 +549,19 @@ z
                 </thead>
                 <tbody>
                   {initialProcesses.map(process => (
+                    // Mỗi hàng (tr) trong tbody đại diện cho một tiến trình.
                     <tr key={process.id}>
+                      {/* cột đầu tiên hiện tên tiến trình */}
                       <td>{process.name}</td>
+                      {/* Các ô tiếp theo trong hàng được tạo ra tương ứng với mỗi thời điểm trong mô phỏng  */}
                       {Array(totalTime)
                         .fill()
                         .map((_, index) => (
                           <td
                             key={index}
                             className={
+
+                              // Mỗi ô được thiết lập với một class ('completed') nếu tiến trình đã hoàn thành tại thời điểm đó
                               this.state.completedProcesses.some(item => {
                                 return item.id === process.id && index >= item.startTime && index < item.endTime;
                               })
