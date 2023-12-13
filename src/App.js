@@ -150,6 +150,7 @@ class CPUSchedulingSimulation extends Component {
         isRunning: false,
         isSimulated: false,
         isPaused: false,
+        selectedScheduleMetrics: null,
       });
     }
   };
@@ -163,6 +164,7 @@ class CPUSchedulingSimulation extends Component {
       isRunning: false,
       isSimulated: false,
       isPaused: false,
+      selectedScheduleMetrics: null,
     });
   };
 
